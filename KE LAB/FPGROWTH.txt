@@ -1,0 +1,181 @@
+#include<bits/stdc++.h>
+using namespace std;
+
+class Trie{
+public:
+unordered_map<string,Trie*> children;
+int count;
+Trie(){
+count = 0;
+}
+};
+
+void findd(Trie* root, vector<pair<vector<string>,int>> &v,vector<string> s,string &tar,string l){
+if(root==NULL) return;
+if(l!="") s.push_back(l);
+if(root->children[tar]!=NULL){
+v.push_back({s, root->children[tar]->count});
+}
+for(auto i:root->children){
+findd(i.second,v,s,tar,i.first);
+}
+}
+
+int main(){
+vector<vector<string>> transactions{
+{"E","K","M","N","O","Y"},
+{"D","E","K","N","O","Y"},
+{"A","E","K","M"},
+{"C","K","M","U","Y"},
+{"C","E","I","K","O","O"}
+};
+int mx = 0;
+for(auto i:transactions){
+mx = max(mx,(int)i.size());
+}
+int minsup = 3,cnt=0;
+
+cout<<"Transactions are: "<<endl;
+for(auto i:transactions){
+cout<<"T"<<++cnt<<": ";
+for(auto j:i){
+cout<<j<<" ";
+}
+cout<<endl;
+}
+cout<<endl;
+
+unordered_map<string,int> freq;
+for(auto i:transactions){
+unordered_map<string,int> temp;
+for(auto j:i){
+
+if(temp[j]==0){
+freq[j]++;
+}
+temp[j]++;
+}
+}
+//ordered by frequency
+vector<pair<string,int>> v1;
+for(auto i:freq){
+v1.push_back({i.first,i.second});
+}
+cout<<"Frequent 1-itemsets are: "<<endl;
+for(auto i:v1){
+cout<<i.first<<" "<<i.second<<endl;
+}
+cout<<endl;
+vector<pair<string,int>> v;
+for(auto i:v1){
+if(i.second>=minsup){
+v.push_back(i);
+}
+}
+sort(v.begin(),v.end(),[](pair<string,int> a,pair<string,int> b){
+if(a.second==b.second){
+return a.first<b.first;
+}
+return a.second>b.second;
+});
+cout<<"Frequent 1-itemsets after pruning are: "<<endl;
+for(auto i:v){
+if(i.second>=minsup){
+
+cout<<i.first<<" "<<i.second<<endl;
+}
+}
+cout<<endl;
+
+vector<vector<string>> orderedTransactions;
+
+for(auto i:transactions){
+vector<string> temp;
+for(auto j:v){
+if(find(i.begin(),i.end(),j.first)!=i.end()){
+temp.push_back(j.first);
+}
+}
+orderedTransactions.push_back(temp);
+}
+
+cout<<"Ordered Transactions are: "<<endl;
+for(int i=0;i<orderedTransactions.size();i++){
+cout<<"T"<<i+1<<": ";
+cnt = 0;
+for(auto j:transactions[i]){
+cout<<j<<" ";
+cnt++;
+}
+for(int j=0;j<mx-cnt;j++){
+cout<<" ";
+}
+
+cout<<"-> ";
+for(auto j:orderedTransactions[i]){
+
+cout<<j<<" ";
+}
+cout<<endl;
+}
+
+cout<<endl;
+
+Trie* root = new Trie();
+
+for(auto i:orderedTransactions){
+Trie* temp = root;
+for(auto j:i){
+if(temp->children[j]==NULL){
+temp->children[j] = new Trie();
+}
+temp = temp->children[j];
+temp->count++;
+}
+}
+
+// conditional pattern base
+vector<pair<string, vector<pair<vector<string>,int>>>> cpb;
+
+for(auto i:v){
+Trie* temp = root;
+vector<pair<vector<string>, int>> temp1;
+findd(temp,temp1,{},i.first,"");
+cpb.push_back({i.first,temp1});
+}
+reverse(cpb.begin(),cpb.end());
+vector<string> ans;
+
+for(auto i:cpb){
+string a = i.first;
+a+=": {";
+for(auto j:i.second){
+a+="(";
+for(auto k:j.first){
+a+=k;
+if(k!=j.first.back()){
+a+=",";
+}
+}
+a+=": ";
+a+=to_string(j.second)+")";
+if(j!=i.second.back()){
+a+=",";
+}
+}
+a+="}";
+string b = "";
+if(a[5]==':'){
+b+=a[0];
+b+=": {}";
+}
+else b=a;
+ans.push_back(b);
+}
+cout<<"Conditional Pattern Base is: "<<endl;
+for(auto i:ans){
+cout<<i<<endl;
+}
+
+return 0;
+}
