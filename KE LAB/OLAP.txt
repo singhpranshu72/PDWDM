@@ -32,3 +32,208 @@ SELECT QUARTER, REGION, SUM(SALES)
 FROM SalesTable
 GROUP BY GROUPING SETS ((QUARTER, REGION), (QUARTER),
 (REGION), ())
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------
+
+-- creating a fact-table for start schema
+
+CREATE TABLE sales_fact ( 
+    sales_id INT PRIMARY KEY, 
+    date_id INT, 
+    product_id INT, 
+    store_id INT, 
+    sales_amount DECIMAL(10,2) 
+);
+
+-- creating a date dimention  table
+CREATE TABLE date_dim ( 
+    date_id INT PRIMARY KEY, 
+    dates NUMBER(2), 
+    months VARCHAR(20), 
+    years INT 
+);
+
+-- creating a product dimention  table
+CREATE TABLE product_dim ( 
+    product_id INT PRIMARY KEY, 
+    product_name VARCHAR(50), 
+    category VARCHAR(50) 
+);
+
+-- creating a store dimention  table
+CREATE TABLE store_dim ( 
+    store_id INT PRIMARY KEY, 
+    store_name VARCHAR(50), 
+    city VARCHAR(50), 
+    states VARCHAR(50) 
+);
+
+
+-- Creating the Foreign Keys to connect the Fact Table with the rest of the tables
+
+ALTER TABLE sales_fact ADD CONSTRAINT fk_date_dim FOREIGN KEY (date_id) REFERENCES date_dim(date_id);
+
+ALTER TABLE sales_fact ADD CONSTRAINT fk_product_dim FOREIGN KEY (product_id) REFERENCES product_dim(product_id);
+
+ALTER TABLE sales_fact ADD CONSTRAINT fk_store_dim FOREIGN KEY (store_id) REFERENCES store_dim(store_id);
+
+
+-- Inserting Data into Date Dimension Table
+
+INSERT INTO date_dim (date_id, dates, months, years) VALUES  
+(1, 7, 'January', 2022), 
+(2, 4, 'February', 2022), 
+(3, 23, 'March', 2022), 
+(4, 18, 'April', 2022), 
+(5, 25, 'May', 2022), 
+(6, 30, 'June', 2022), 
+(7, 28, 'July', 2022), 
+(8, 1, 'August', 2022);
+
+
+
+-- Inserting Data into Product Dimension Table
+
+INSERT INTO product_dim VALUES (11, 'Light Fixtures', 'Decor');
+
+INSERT INTO product_dim VALUES (12, 'Hexagon Silver Mirrors', 'Wall Art');
+
+INSERT INTO product_dim VALUES (13, 'Comfy Couch', 'Furniture');
+
+INSERT INTO product_dim VALUES (14, 'Flower Stands', 'Furniture');
+
+INSERT INTO product_dim VALUES (15, 'Neon LED Light', 'Wall Art');
+
+INSERT INTO product_dim VALUES (16, 'Vintage ArtWork', 'Decor');
+
+
+
+-- Inserting Data into Store Dimension Table
+
+INSERT INTO store_dim VALUES (1, 'Carnatia', 'Sacramento', 'CA');
+
+INSERT INTO store_dim VALUES (2, 'Smile', 'Beverly Hills', 'CA');
+
+INSERT INTO store_dim VALUES (3, 'Krispy', 'Malibu', 'NY');
+
+INSERT INTO store_dim VALUES (4, 'Cameo', 'Los Angeles', 'CA');
+
+INSERT INTO store_dim VALUES (5, 'Barlim', 'San Francisco', 'IL');
+
+
+
+-- Inserting Data into Fact-Table
+
+INSERT INTO sales_fact VALUES (1, 1, 11, 1, 1000.00);
+
+INSERT INTO sales_fact VALUES (2, 1, 12, 1, 2000.00);
+
+INSERT INTO sales_fact VALUES (3, 2, 16, 2, 1500.00);
+
+INSERT INTO sales_fact VALUES (4, 2, 13, 5, 3000.00);
+
+INSERT INTO sales_fact VALUES (5, 3, 14, 3, 2500.00);
+
+INSERT INTO sales_fact VALUES (6, 4, 12, 4, 1800.00);
+
+INSERT INTO sales_fact VALUES (7, 5, 15, 2, 1720.00);
+
+INSERT INTO sales_fact VALUES (8, 6, 12, 4, 2450.00);
+
+INSERT INTO sales_fact VALUES (9, 8, 15, 2, 1250.00);
+
+INSERT INTO sales_fact VALUES (10, 2, 13, 3, 3920.00);
+
+INSERT INTO sales_fact VALUES (11, 3, 14, 3, 2830.00);
+
+INSERT INTO sales_fact VALUES (12, 4, 12, 5, 1990.00);
+
+INSERT INTO sales_fact VALUES (13, 6, 11, 1, 1920.00);
+
+INSERT INTO sales_fact VALUES (14, 7, 12, 2, 2930.00);
+
+INSERT INTO sales_fact VALUES (15, 7, 16, 5, 1240.00);
+
+INSERT INTO sales_fact VALUES (16, 8, 13, 4, 3020.00);
+
+INSERT INTO sales_fact VALUES (17, 3, 15, 4, 2990.00);
+
+INSERT INTO sales_fact VALUES (18, 1, 16, 2, 1890.00);
+
+
+
+SELECT * from date_dim;
+
+SELECT * FROM product_dim;
+
+SELECT * FROM store_dim;
+
+SELECT * FROM sales_fact;
+
+
+
+-- SQL Command to perform Roll-Up Operation
+
+SELECT years, category, SUM(sales_amount) AS total_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+GROUP BY years, category 
+ORDER BY years, category;
+
+
+-- –SQL Command to perform Drill-Down Operation
+
+SELECT years, months, category, SUM(sales_amount) AS total_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+GROUP BY years, months, category 
+ORDER BY years, months, category;
+
+
+-- -- SQL Command to perform Pivot Operation
+
+SELECT years, 
+       SUM(CASE WHEN category = 'Decor' THEN sales_amount ELSE 0 END) AS decor_sales, 
+       SUM(CASE WHEN category = 'Wall Art' THEN sales_amount ELSE 0 END) AS wallArt_sales, 
+       SUM(CASE WHEN category = 'Furniture' THEN sales_amount ELSE 0 END) AS furniture_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+GROUP BY years 
+ORDER BY years;
+
+
+-- SQL Command to perform Slicing Operation
+
+SELECT city, category, SUM(sales_amount) AS total_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN store_dim ON sales_fact.store_id = store_dim.store_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+WHERE years = 2022 
+GROUP BY city, category 
+ORDER BY city, category;
+
+
+-- SQL Command to perform Dicing Operation
+SELECT years, category, SUM(sales_amount) AS total_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+GROUP BY years, category 
+HAVING SUM(sales_amount) > 3000 
+ORDER BY years, category;
+
+
+
+-- SQL Command to perform Cubing Operation
+
+SELECT years, months, category, SUM(sales_amount) AS total_sales 
+FROM sales_fact 
+JOIN date_dim ON sales_fact.date_id = date_dim.date_id 
+JOIN product_dim ON sales_fact.product_id = product_dim.product_id 
+GROUP BY ROLLUP(years, months, category) 
+ORDER BY years, months, category;
