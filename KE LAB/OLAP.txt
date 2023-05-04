@@ -1,0 +1,34 @@
+CREATE TABLE SalesTable (
+PRODUCT varchar(255),
+QUARTER varchar(255),
+REGION varchar(255),
+SALES int
+);
+INSERT INTO SalesTable (PRODUCT, QUARTER, REGION, SALES)
+VALUES ('A','Q1','Europe',10),
+VALUES ('A','Q1','America',20),
+VALUES ('A','Q2','Europe',20),
+VALUES ('A','Q2','America',50),
+VALUES ('A','Q3','America',20),
+VALUES ('A','Q4','Europe',10),
+VALUES ('A','Q4','America',30),
+VALUES ('B','Q1','Europe',40);
+
+SLICE----
+
+SELECT *
+FROM SalesTable
+WHERE region = 'America';
+
+ROLL UP----
+
+SELECT REGION, SUM(SALES)
+FROM SalesTable
+GROUP BY REGION;
+
+Grouping Sets
+QUERY:
+SELECT QUARTER, REGION, SUM(SALES)
+FROM SalesTable
+GROUP BY GROUPING SETS ((QUARTER, REGION), (QUARTER),
+(REGION), ())
